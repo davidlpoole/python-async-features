@@ -1,35 +1,53 @@
-import asyncio
+import queue
+import requests
 from codetiming import Timer
 
 
-async def task(name, work_queue):
+def task(name, work_queue):
     timer = Timer(text=f"Task {name} elapsed time: {{:.1f}}")
-    while not work_queue.empty():
-        delay = await work_queue.get()
-        print(f"Task {name} running")
-        timer.start()
-        await asyncio.sleep(delay)
-        timer.stop()
+    with requests.Session() as session:
+        while not work_queue.empty():
+            url = work_queue.get()
+            print(f"Task {name} getting URL: {url}")
+            timer.start()
+            session.get(url)
+            timer.stop()
+            yield
 
 
-async def main():
+def main():
     """
     This is the main entry point for the program
     """
     # Create the queue of work
-    work_queue = asyncio.Queue()
+    work_queue = queue.Queue()
 
     # Put some work in the queue
-    for work in [15, 10, 5, 2]:
-        await work_queue.put(work)
+    for url in [
+        "http://google.com",
+        "http://yahoo.com",
+        "http://linkedin.com",
+        "http://apple.com",
+        "http://microsoft.com",
+        "http://facebook.com",
+        "http://twitter.com",
+    ]:
+        work_queue.put(url)
+
+    tasks = [task("One", work_queue), task("Two", work_queue)]
 
     # Run the tasks
-    with Timer(text="\nTotal elapsed time: {:.1f}"):
-        await asyncio.gather(
-            asyncio.create_task(task("One", work_queue)),
-            asyncio.create_task(task("Two", work_queue)),
-        )
+    done = False
+    with Timer(text="\n Total elapsed time: {:.1f}"):
+        while not done:
+            for t in tasks:
+                try:
+                    next(t)
+                except StopIteration:
+                    tasks.remove(t)
+                if len(tasks) == 0:
+                    done = True
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

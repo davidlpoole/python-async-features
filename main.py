@@ -1,15 +1,17 @@
+import time
 import queue
+from codetiming import Timer
 
 
 def task(name, queue):
+    timer = Timer(text=f"Task {name} elapsed time: {{:.1f}}")
     while not queue.empty():
-        count = queue.get()
-        total = 0
-        print(f"Task {name} running [queue: {count}]")
-        for x in range(count):
-            total += 1
-            yield
-        print(f"Task {name} total: {total}")
+        delay = queue.get()
+        print(f"Task {name} running [delay: {delay}]")
+        timer.start()
+        time.sleep(delay)
+        timer.stop()
+        yield
 
 
 def main():
@@ -28,14 +30,15 @@ def main():
 
     # Run the tasks
     done = False
-    while not done:
-        for t in tasks:
-            try:
-                next(t)
-            except StopIteration:
-                tasks.remove(t)
-            if len(tasks) == 0:
-                done = True
+    with Timer(text="\nTotal elapsed time: {:.1f}"):
+        while not done:
+            for t in tasks:
+                try:
+                    next(t)
+                except StopIteration:
+                    tasks.remove(t)
+                if len(tasks) == 0:
+                    done = True
 
 
 if __name__ == "__main__":

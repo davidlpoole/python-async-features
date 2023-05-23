@@ -36,10 +36,10 @@ async def main():
 
     # Run the tasks
     with Timer(text="\n Total elapsed time: {:.1f}"):
-        await asyncio.gather(
-            asyncio.create_task(task("One", work_queue)),
-            asyncio.create_task(task("Two", work_queue)),
-        )
+        names = ["one", "two"]
+        async with asyncio.TaskGroup() as tg:
+            for name in names:
+                tg.create_task(task(name, work_queue))
 
 
 if __name__ == "__main__":
